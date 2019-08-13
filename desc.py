@@ -1,9 +1,9 @@
 import telebot
-import cases
 import yandex_dictionary
 import pyaspeller
 import re
 import pymorphy2
+from grammarBot.cases import do_a_thing
 from telethon import TelegramClient, events
 
 dictionary = yandex_dictionary.YandexDictionary('dict.1.1.20190810T071133Z.93e0d48371a4a683.'
@@ -65,7 +65,7 @@ def sticker_id(message):
 def reaction(message):
     log(message)
     word = message.text.split()[1]
-    cased_word = cases.do_a_thing(word)
+    cased_word = do_a_thing(word)
     for case in cased_word:
         bot.send_message(message.chat.id, case)
 
