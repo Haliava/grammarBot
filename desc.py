@@ -3,6 +3,8 @@ import yandex_dictionary
 import pyaspeller
 import re
 import pymorphy2
+import sqlite3
+import russian_tags
 from cases import do_a_thing
 from telethon import TelegramClient, events
 
@@ -11,7 +13,6 @@ dictionary = yandex_dictionary.YandexDictionary('dict.1.1.20190810T071133Z.93e0d
 api_id = 923499
 chats = [-270467580]
 chats_group_modes = {x: False for x in chats}
-print(chats_group_modes)
 api_hash = 'd01f94c8d80d5ce066b20ca0cd59dd7a'
 bot_token = '885032569:AAGOUfwyUIMZjCveJLRtHi5x8xpCk9Bj2F8'
 inv_link = 'https://t.me/joinchat/KR-2gxSdvFh3hSHnedSjag'
@@ -73,7 +74,7 @@ def reaction(message):
 
 
 @bot.message_handler(func=lambda m: m.text.count(' ') > 0 and
-                     not re.match(r'^(синоним|склонение)', m.text.lower()), content_types=['text'])
+                     not re.match(r'^(синоним|склонение|разбор)', m.text.lower()), content_types=['text'])
 def correct_sentence(message):
     log(message)
     check_chats(message)
@@ -96,6 +97,24 @@ def correct_sentence(message):
         else:
             if not chats_group_modes[message.chat.id]:
                 bot.send_message(message.chat.id, 'Всё верно!')
+
+
+@bot.message_handler(func=lambda m: re.match(r'(разбор)[. ]*\w+', m.text.lower()), content_types=['text'])
+def deconstruct(message):
+    check_chats(message)
+    log(message)
+    word = message.text.split()[1]
+    print(morph.parse(word)[0])
+    parsed_word = morph.parse(word)[0] if len(morph.parse(word)) > 1 else morph.parse(word)
+    bot.send_message(message.chat.id, f'Разбор слова "{word}":\n'
+                                      f'1) {russian_tags.part_of_speech(word)}\n'
+                                      f'2) Н.Ф: {parsed_word.normal_form}\n'
+                                      f'3) {russian_tags.gender(word)}\n'
+                                      f'4) {russian_tags.number(word)}\n'
+                                      f'4) {russian_tags.case(word)}\n')
+    if ('VERB', 'PRTF', 'GRND') in parsed_word[0].tag.POS:
+        bot.send_message(message.chat.id, f'А также, у вашего слова есть:\n'
+                                          f'вид: {123}')
 
 
 @bot.message_handler(func=lambda m: re.fullmatch(r'\w+[^\.]', m.text), content_types=['text'])
@@ -145,6 +164,13 @@ def reject(message):
 
 
 def log(message):
+    entry = (message.chat.id, message.text)
+    conn = sqlite3.connect('conversations.db', check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute('insert into messages values (?, ?)', entry)
+    conn.commit()
+    cursor.close()
+    conn.close()
     print(message.text)
 
 
