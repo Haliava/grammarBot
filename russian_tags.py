@@ -64,4 +64,6 @@ def gender(word):
 
 
 def aspect(word):
-    asp = morph.parse(word)
+    asp = morph.parse(word).tag.aspect
+    asp_dic = {'perf': 'совершенный',
+               }
