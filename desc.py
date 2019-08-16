@@ -39,8 +39,10 @@ def start_message(message):
     check_chats(message)
     bot.send_message(message.chat.id, 'Привет, для проверки орфографии одного слова или предложения'
                                       ' просто напиши его.\n\n'
-                                      'Для подбора синонимов к слову напиши "синоним (слово в любом падеже)"\n\n'
-                                      'Для склонения слова напиши "склонение (слово в любом падеже)"')
+                                      'Для подбора синонимов к слову напиши "синоним <слово> (в любом падеже)"\n\n'
+                                      'Для склонения слова напиши "склонение <слово> (в любом падеже)"\n\n'
+                                      'Для разбора слова нипиши "разбор <слово> '
+                                      '(частицы, предлоги и т.д. пока не поддерживаются)"')
 
 
 @bot.message_handler(commands=['switch_group_mode'])
@@ -104,17 +106,29 @@ def deconstruct(message):
     check_chats(message)
     log(message)
     word = message.text.split()[1]
-    print(morph.parse(word)[0])
-    parsed_word = morph.parse(word)[0] if len(morph.parse(word)) > 1 else morph.parse(word)
+    parsed_word = morph.parse(word)[0]
+    pos = parsed_word.tag.POS
     bot.send_message(message.chat.id, f'Разбор слова "{word}":\n'
                                       f'1) {russian_tags.part_of_speech(word)}\n'
-                                      f'2) Н.Ф: {parsed_word.normal_form}\n'
+                                      f'2) Н.Ф: {parsed_word.inflect({"sing", "nomn"}).word}\n'
                                       f'3) {russian_tags.gender(word)}\n'
                                       f'4) {russian_tags.number(word)}\n'
                                       f'4) {russian_tags.case(word)}\n')
-    if ('VERB', 'PRTF', 'GRND') in parsed_word[0].tag.POS:
+    if pos in ('VERB', 'PRTF', 'GRND'):
         bot.send_message(message.chat.id, f'А также, у вашего слова есть:\n'
-                                          f'вид: {123}')
+                                          f'вид: {russian_tags.aspect(word)}\n'
+                                          f'совершенность: {russian_tags.aspect(word)}\n'
+                                          f'переходность: {russian_tags.transitivity(word)}\n')
+    if pos == 'VERB':
+        bot.send_message(message.chat.id, f'И ещё:\n'
+                                          f'лицо: {russian_tags.person(word)}\n'
+                                          f'наклонение: {russian_tags.mood(word)}')
+    if pos in ('VERB', 'GRND'):
+        bot.send_message(message.chat.id, f'время: {russian_tags.tense(word)}\n')
+    if pos == 'PRTF':
+        bot.send_message(message.chat.id, f'А раз ваше слово - причастие, то у него есть:\n'
+                                          f'наклонение: {russian_tags.mood(word)}\n'
+                                          f'и залог: {russian_tags.voice(word)}\n')
 
 
 @bot.message_handler(func=lambda m: re.fullmatch(r'\w+[^\.]', m.text), content_types=['text'])
