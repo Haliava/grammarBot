@@ -73,8 +73,8 @@ def transitivity(word):
 def mood(word):
     moo = morph.parse(word)[0].tag.mood
     mood_dic = {'indc': 'изъявительное',
-                'impr': 'повелиьтельное',
-                None: 'либо наклонение условное, либо его нет'}
+                'impr': 'повелительное',
+                None: 'либо условное, либо его нет'}
     return mood_dic[moo]
 
 

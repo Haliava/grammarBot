@@ -34,7 +34,7 @@ def check_chats(mess):
         chats_group_modes[mess.chat.id] = False
 
 
-@bot.message_handler(commands=['start', 'че'])
+@bot.message_handler(commands=['start'])
 def start_message(message):
     check_chats(message)
     bot.send_message(message.chat.id, 'Привет, для проверки орфографии одного слова или предложения'
@@ -67,7 +67,7 @@ def sticker_id(message):
 
 @bot.message_handler(func=lambda m: re.match(r'(склонение)[. ]*\w+', m.text.lower()), content_types=['text'])
 def reaction(message):
-    check_chats(message.chat)
+    check_chats(message)
     log(message)
     word = message.text.split()[1]
     cased_word = do_a_thing(word)
@@ -110,7 +110,7 @@ def deconstruct(message):
     pos = parsed_word.tag.POS
     bot.send_message(message.chat.id, f'Разбор слова "{word}":\n'
                                       f'1) {russian_tags.part_of_speech(word)}\n'
-                                      f'2) Н.Ф: {parsed_word.inflect({"sing", "nomn"}).word}\n'
+                                      f'2) Н.Ф: {parsed_word.inflect({"sing", "nomn"}).word if pos == "PRTF" else parsed_word.normal_form}\n'
                                       f'3) {russian_tags.gender(word)}\n'
                                       f'4) {russian_tags.number(word)}\n'
                                       f'4) {russian_tags.case(word)}\n')
@@ -140,7 +140,7 @@ def correct_sentence(message):
             bot.send_message(message.chat.id, f'Вы написали слово "{message.text}" неправильно.\n'
                                               f'Правильно: {pyaspeller.Word(message.text).spellsafe}')
         else:
-            bot.send_message(message.chat.id, 'Чё')
+            bot.send_message(message.chat.id, 'Тут я вам помочь не могу')
     else:
         if not chats_group_modes[message.chat.id]:
             bot.send_message(message.chat.id, 'Слово написано правильно')
