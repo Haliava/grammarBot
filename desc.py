@@ -39,10 +39,24 @@ def start_message(message):
     check_chats(message)
     bot.send_message(message.chat.id, 'Привет, для проверки орфографии одного слова или предложения'
                                       ' просто напиши его.\n\n'
-                                      'Для подбора синонимов к слову напиши "синоним <слово> (в любом падеже)"\n\n'
-                                      'Для склонения слова напиши "склонение <слово> (в любом падеже)"\n\n'
-                                      'Для разбора слова нипиши "разбор <слово> '
-                                      '(частицы, предлоги и т.д. пока не поддерживаются)"')
+                                      'Для подбора синонимов к слову напиши "синоним⎵<слово> (в любом падеже)"\n\n'
+                                      'Для склонения слова напиши "склонение⎵<слово> (в любом падеже)"\n\n'
+                                      'Для разбора слова нипиши "разбор⎵<слово> '
+                                      '(частицы, предлоги и т.д. пока не поддерживаются)"'
+                                      'Если вы нашли ошибку - "ошибка:<ошибка>:<слово>"')
+
+
+'''@bot.message_handler(lambda m: re.match(r'^ошибка[:]+\w+[:]+\w+', m.text.lower()))
+def send_error_message(mes):
+    try:
+        connection = sqlite3.connect('errors.db')
+        cursor = connection.cursor()
+        error = mes.text.split(' ')
+        error = (error.split(':')[0], error.split(':'))
+        print(error)
+        cursor.execute('INSERT INTO errors VALUES (?, ?)', error)
+    except Exception:
+        bot.send_message(mes.chat.id, 'Ошибка')'''
 
 
 @bot.message_handler(commands=['switch_group_mode'])
@@ -63,6 +77,13 @@ def sticker_id(message):
     if not chats_group_modes[message.chat.id]:
         bot.send_message(message.chat.id, f'id стикера: {str(message.sticker.file_id)}')
     print(message.sticker.file_id)
+
+
+@bot.message_handler(func=lambda m: re.match(r'^(привет|здорова)', m.text.lower()))
+def zdorova(message):
+    log(message)
+    check_chats(message)
+    bot.send_message(message.chat.id, f'Ну здорова, {message.from_user.first_name}!')
 
 
 @bot.message_handler(func=lambda m: re.match(r'(склонение)[. ]*\w+', m.text.lower()), content_types=['text'])
@@ -114,7 +135,7 @@ def deconstruct(message):
                                       f'3) {russian_tags.gender(word)}\n'
                                       f'4) {russian_tags.number(word)}\n'
                                       f'4) {russian_tags.case(word)}\n')
-    if pos in ('VERB', 'PRTF', 'GRND'):
+    if pos in ('VERB', 'PRTF', 'GRND', 'INFN'):
         bot.send_message(message.chat.id, f'А также, у вашего слова есть:\n'
                                           f'вид: {russian_tags.aspect(word)}\n'
                                           f'совершенность: {russian_tags.aspect(word)}\n'
@@ -131,8 +152,8 @@ def deconstruct(message):
                                           f'и залог: {russian_tags.voice(word)}\n')
 
 
-@bot.message_handler(func=lambda m: re.fullmatch(r'\w+[^\.]', m.text), content_types=['text'])
-def correct_sentence(message):
+@bot.message_handler(func=lambda m: re.fullmatch(r'(\w+[^\.]|\w+\-\w+)', m.text), content_types=['text'])
+def correct_a_word(message):
     log(message)
     check_chats(message)
     if not pyaspeller.Word(message.text).correct:
